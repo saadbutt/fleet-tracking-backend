@@ -34,6 +34,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
@@ -102,21 +103,29 @@ func main() {
 	vehicleRepo := repository.NewVehicleRepository(db)
 	cacheService := service.NewCacheService(rdb)
 	vehicleService := service.NewVehicleService(vehicleRepo, cacheService)
+	simulatorService := service.NewSimulatorService(vehicleService)
 	vehicleController := controllers.NewVehicleController(vehicleService)
 
 	// Initialize and start the sensor simulator
-	simulatorService := service.NewSimulatorService(vehicleService)
+	go func() {
+		logger.Info("Starting sensor simulation service...")
 
-	// Get the first available vehicle from database for simulation
-	vehicleID, err := vehicleRepo.GetFirstVehicleID()
-	if err != nil {
-		logger.Warn("No vehicles found in database for simulation. Please seed the database first.")
-		logger.Info("You can seed the database by running: psql -d fleet_tracking -f migrations/001_complete_schema.sql")
-	} else {
-		// Start simulation for the first available vehicle
-		simulatorService.StartSimulation(ctx, vehicleID)
-		logger.Info("Started automatic sensor simulation for vehicle: " + vehicleID)
-	}
+		// Wait for database to be ready and vehicles to be seeded
+		for {
+			vehicleID, err := vehicleRepo.GetFirstVehicleID()
+			if err != nil {
+				logger.Info("Waiting for database to be seeded with vehicles... (run 'make seed' to create tables and sample data)")
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			// Start simulation for the first available vehicle
+			simulatorService.StartSimulation(ctx, vehicleID)
+			logger.Info("Started automatic sensor simulation for vehicle: " + vehicleID)
+			logger.Info("Sensor data will be generated every 2 seconds")
+			return
+		}
+	}()
 
 	// Create HTTP mux and setup routes
 	mux := http.NewServeMux()
@@ -175,6 +184,7 @@ func setupRoutes(mux *http.ServeMux, healthController *controllers.HealthControl
 		middleware.ObservabilityMiddleware(),
 		middleware.RecoverMiddleware(errorHandler),
 	))
+
 }
 
 // loadEnvFile loads environment variables from an .env file
