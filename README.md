@@ -171,3 +171,4 @@ The easiest way to test the API is using the built-in Swagger UI:
 3. Use the "Authorize" button to set your JWT token
 4. Test all endpoints directly in the browser
 
+For more detail use this README: [`README/`](./docs/README.md)
