@@ -372,25 +372,6 @@ ORDER BY start_time DESC;
 "
 ```
 
-## Quick Start
-
-```bash
-# 1. Start the application
-make dev
-
-# 2. Seed the database
-make seed
-
-# 3. Generate a JWT token
-make token
-
-# 4. Test the API
-curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/api/vehicle/status?vehicle_id=VEHICLE_ID
-
-# 5. View Swagger documentation
-make swagger
-```
-
 ## Setup Options
 
 ### Prerequisites
