@@ -1,0 +1,318 @@
+openapi: 3.0.3
+info:
+  title: Fleet Tracking API
+  version: 1.0
+  description: A simple fleet tracking API for vehicle management
+  termsOfService: http://swagger.io/terms/
+  contact:
+    name: API Support
+    url: http://www.swagger.io/support
+    email: support@swagger.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Get the health status of the API
+      tags:
+        - health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/v1/health:
+    get:
+      summary: Health check (v1)
+      description: Get the health status of the API (v1 endpoint)
+      tags:
+        - health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/vehicle/status:
+    get:
+      summary: Get vehicle status
+      description: Get current status of a vehicle by ID
+      tags:
+        - vehicle
+      parameters:
+        - name: vehicle_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Vehicle ID
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Vehicle status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleStatus'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Vehicle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/vehicle/trips:
+    get:
+      summary: Get trip history
+      description: Get trip history for a vehicle in the past 1-24 hours
+      tags:
+        - vehicle
+      parameters:
+        - name: vehicle_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Vehicle ID
+        - name: hours
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 24
+            default: 24
+          description: Number of hours to look back (default: 24, max: 24)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Trip history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripHistoryResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Vehicle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/vehicle/ingest:
+    post:
+      summary: Ingest vehicle data
+      description: Ingest new vehicle data from sensor stream
+      tags:
+        - vehicle
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vehicle_id
+                - status
+              properties:
+                vehicle_id:
+                  type: string
+                  description: Vehicle ID
+                status:
+                  type: object
+                  required:
+                    - timestamp
+                  properties:
+                    timestamp:
+                      type: string
+                      format: date-time
+                      description: Timestamp in RFC3339 format
+                    location:
+                      type: array
+                      items:
+                        type: number
+                      minItems: 2
+                      maxItems: 2
+                      description: [latitude, longitude]
+                    speed:
+                      type: number
+                      description: Speed in km/h
+      responses:
+        '201':
+          description: Vehicle data ingested successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vehicle data ingested successfully"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Type "Bearer" followed by a space and JWT token.
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "healthy"
+        message:
+          type: string
+          example: "All systems operational"
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: "1.0.0"
+
+    VehicleStatus:
+      type: object
+      properties:
+        vehicle_id:
+          type: string
+        plate_number:
+          type: string
+        status:
+          type: object
+          description: Vehicle status data (location, speed, etc.)
+        last_updated:
+          type: string
+          format: date-time
+
+    Trip:
+      type: object
+      properties:
+        id:
+          type: string
+        vehicle_id:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        mileage:
+          type: number
+        avg_speed:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    TripHistoryResponse:
+      type: object
+      properties:
+        vehicle_id:
+          type: string
+        trips:
+          type: array
+          items:
+            $ref: '#/components/schemas/Trip'
+        count:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: integer
