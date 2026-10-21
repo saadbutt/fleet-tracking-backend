@@ -44,7 +44,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
-      JWT_SECRET: fleet-tracking-secret-key-2024-production
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-override-via-env}
       PORT: 8080
     ports:
       - "8080:8080"

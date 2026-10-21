@@ -15,6 +15,10 @@
 git clone https://github.com/saadbutt/fleet-tracking-backend
 cd fleet-tracking-backend
 
+# docker-compose.yml falls back to an insecure dev-only JWT secret.
+# Set your own before running anything beyond local dev:
+# echo "JWT_SECRET=$(openssl rand -hex 32)" > .env
+
 # Start all services
 docker-compose up -d
 
