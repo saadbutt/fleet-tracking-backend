@@ -25,9 +25,6 @@ func GenerateRandomSensorData(vehicleID string) *SensorData {
 	baseLat := 25.2048
 	baseLng := 55.2708
 
-	// Seed random number generator with current time for better randomness
-	rand.Seed(time.Now().UnixNano())
-
 	// Add randomness to location (larger variation for realistic movement)
 	lat := baseLat + (rand.Float64()-0.5)*0.1 // ±0.05 degrees (~5.5 km)
 	lng := baseLng + (rand.Float64()-0.5)*0.1 // ±0.05 degrees (~5.5 km)
