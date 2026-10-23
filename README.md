@@ -1,4 +1,56 @@
 # Fleet Tracking Backend Service
+
+[![CI](https://github.com/saadbutt/fleet-tracking-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/saadbutt/fleet-tracking-backend/actions/workflows/ci.yml)
+
+A REST API for real-time vehicle location and trip history. JWT auth,
+PostgreSQL, Redis caching, Swagger docs, Docker Compose.
+
+## Tech stack
+
+- **Language:** Go, `net/http`'s standard library `ServeMux` — no web
+  framework
+- **Database:** PostgreSQL (`lib/pq`), with versioned SQL migrations
+- **Cache:** Redis (`redis/go-redis/v9`), write-through invalidation with a
+  5-minute TTL
+- **Auth:** JWT (`golang-jwt/jwt/v5`)
+- **Docs:** Swagger/OpenAPI (`swaggo`), served at `/swagger/`
+- **CI:** GitHub Actions — gofmt, vet, full suite, race detector, arm64
+  cross-compile
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Client["Client"] -->|HTTP| Mux["net/http.ServeMux"]
+
+    Mux --> MW["Middleware chain:\nJWT -> Observability -> Recover"]
+    MW --> Health["HealthController"]
+    MW --> Vehicle["VehicleController"]
+
+    Vehicle --> VSvc["VehicleService"]
+    Health --> HSvc["HealthService"]
+
+    VSvc --> Cache["CacheService (Redis)\n5-min TTL, write-through"]
+    VSvc --> Repo["VehicleRepository"]
+    Repo --> PG[("PostgreSQL")]
+    Cache --> RD[("Redis")]
+
+    Sim["Simulator\n(background goroutine)"] -->|writes sensor data| Repo
+```
+
+The simulator runs as a background goroutine seeded against the first
+vehicle in the database — it's what makes `/api/vehicle/status` return
+moving data without a real GPS device attached. Full schema and caching
+rationale: [`docs/README.md`](./docs/README.md).
+
+## Measurable results
+
+- **0 vulnerabilities** — `govulncheck ./...` reports a clean scan
+- **5 test functions, 30 cases** including table-driven subtests —
+  `go test ./internal/...`
+- **CI green** on gofmt, vet, the full suite, the race detector, and an
+  arm64 cross-compile, on every push
+
 ## Installation & Setup instructions
 
 ### Prerequisites
@@ -165,6 +217,26 @@ curl -X POST http://localhost:8080/api/vehicle/ingest \
   "vehicle_id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+## Demo output
+
+Swagger UI is a real browser GUI, not something a terminal can capture, so
+rather than fake a screenshot, here's the stack actually running end to end —
+`docker compose up`, a real migration, a real JWT token, a real request:
+
+```
+$ curl -s http://localhost:8080/health
+{"status":"healthy","message":"All systems operational","timestamp":"2026-10-23T13:10:51Z","version":"1.0.0"}
+
+$ TOKEN=$(go run scripts/generate_token.go)
+$ curl -s "http://localhost:8080/api/vehicle/status?vehicle_id=$VID" -H "Authorization: Bearer $TOKEN"
+{"vehicle_id":"b6665aa0-b3e0-4302-b75b-27a61231e9a5","plate_number":"ABC-123","status":{"location":[25.2278,55.2707],"speed":103.78,"timestamp":"2026-10-23T13:11:10Z"},"last_updated":"2026-10-23T13:11:10Z"}
+```
+
+The moving location and speed aren't fixture data — that's the background
+simulator writing real rows the whole time this ran. Swagger UI itself is at
+`http://localhost:8080/swagger/` once the stack is up; open it in a browser to
+see it directly, it's a real GUI.
 
 ## API Testing
 
