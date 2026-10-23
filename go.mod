@@ -1,6 +1,6 @@
 module fleet-tracking
 
-go 1.25
+go 1.26.10
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -23,8 +23,8 @@ require (
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
