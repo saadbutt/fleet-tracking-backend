@@ -26,8 +26,10 @@ type JWTManager struct {
 func NewJWTManager() *JWTManager {
 	secretKey := os.Getenv("JWT_SECRET")
 	if secretKey == "" {
-		// Default secret for development (should be set in production)
-		secretKey = "fleet-tracking-secret-key-2024"
+		// Same literal fallback docker-compose.yml uses, so a token generated
+		// with no JWT_SECRET set always validates against a server started
+		// the same way. Never rely on this past local dev.
+		secretKey = "dev-only-insecure-secret-override-via-env"
 	}
 	return &JWTManager{
 		secretKey: []byte(secretKey),

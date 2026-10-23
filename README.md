@@ -78,8 +78,8 @@ Authorization: Bearer <your-jwt-token>
 
 ### Generate Test Token
 ```bash
-go run scripts/generate_token.go > token.txt
-curl -H "Authorization: Bearer $(cat token.txt)" ...
+TOKEN=$(go run scripts/generate_token.go)
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/vehicle/status?vehicle_id=<id>
 ```
 
 ### Swagger Documentation
